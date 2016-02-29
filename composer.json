@@ -1,4 +1,5 @@
 {
+	"name": "satel",
 	"autoload": {
 		"psr-4": {
 			"Satel\\": "src/"
