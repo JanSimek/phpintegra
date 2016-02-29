@@ -9,40 +9,37 @@ Special thanks to the [IntegraPy] project which was my starting point.
 
 1. Which commands are supported?
 
-| cmd | argument           | function                      |
-|-----|--------------------|-------------------------------|
-| 1A  |          -         | Clock and basic system status |
-| 7E  |          -         | Integra type and version      |
-| 8C  | last event: FFFFFF | Event information             |
-| 00  |          -         | List of violated zones        |
+    | cmd | argument           | function                      |
+    |-----|--------------------|-------------------------------|
+    | 1A  |          -         | Clock and basic system status |
+    | 7E  |          -         | Integra type and version      |
+    | 8C  | last event: FFFFFF | Event information             |
+    | 00  |          -         | List of violated zones        |
 
 2. How to use this class via Composer
 
-Install composer and create ```composer.json``` file in your project directory. Paste in the contents below and finally execute ```composer install```
+    Install composer and create ```composer.json``` file in your project directory. Paste in the contents below and finally execute ```composer install```
 
-```json
-{
-    "require":
+    ```json
     {
-        "satel": "dev-master"
-    },
-    "repositories":
-    [
+        "require":
         {
-            "type": "vcs",
-            "url": "https://github.com/JanSimek/phpintegra.git"
-        }
-    ]
-}
-```
+            "satel": "dev-master"
+        },
+        "repositories":
+        [
+            {
+                "type": "vcs",
+                "url": "https://github.com/JanSimek/phpintegra.git"
+            }
+        ]
+    }
+    ```
 
-Then create ```test.php```:
+    Then create ```test.php```:
 
-```php
-require __DIR__ . '/vendor/autoload.php';
+    ```php
+    require __DIR__ . '/vendor/autoload.php';
 
-// Ip address of your ETHM-1 module can be changed inside the integra panel:
-// Service mode -> Structure -> Hardware -> LCD Keypads -> Settings -> [select the ETHM module from the list of devices]
-
-$satel = new Satel\Integra("192.168.1.112"); // ip address of your ETHM-1 module
-```
+    $satel = new Satel\Integra("192.168.1.112"); // ip address of your ETHM-1 module
+    ```
