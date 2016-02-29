@@ -1,8 +1,12 @@
 <?php
 
-require_once "Integra.class.php";
+require_once "src/Integra.php";
 
-$satel = new Satel\Integra("192.168.0.112");
+// Ip address of your ETHM-1 module can be changed inside the integra panel:
+// Service mode -> Structure -> Hardware -> LCD Keypads -> Settings -> [select the ETHM module from the list of devices]
+
+$satel = new Satel\Integra("192.168.1.112");
+
 $satel->setLogging(false); // disable log output
 //$satel->setDebug(true); // enable debug output
 
