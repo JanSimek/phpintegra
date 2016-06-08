@@ -33,9 +33,12 @@ class Integra
      */
     private $commandList = array();
 
-    const PARTITION = "00";
-    const ZONE      = "01";
-    const OUTPUT    = "04";
+    const PARTITION	= "00"; // partition (1..32)
+    const ZONE		= "01"; // zone (1..128), in INTEGRA 256 PLUS - up to 256
+    const USER		= "02"; // user (1..255) (*)
+    const EXPANDER	= "03"; // expander/LCD (129..192 - expander, 193..210 - LCD)
+    const OUTPUT	= "04"; // output (1..128), in INTEGRA 256 PLUS - up to 256
+    const ZONEX		= "05"; // zone (1..128) with partition assignment (*), in INTEGRA 256 PLUS - up to 256
 
     /**
      * @param string $ip        address of the ETHM-1 module
@@ -117,17 +120,17 @@ class Integra
      */
     private function checkZones($raw)
     {
-        if ($this->debug) {
-            $this->log("info", "Checking zones.");
-        }
+        $this->log("info", "Checking zones.");
 
         $violated = array();
-        for ($i = 0; $i < 15; $i++) {
-            for ($b = 0; $b < 7; $b++) {
+
+        // FIXME: this checks for 16*8=128 zones; number of zones varies with different Integra models
+        for ($i = 0; $i < 16; $i++) {
+            for ($b = 0; $b < 8; $b++) {
                 if (pow(2, $b) & hexdec(bin2hex($raw[$i+3]))) { // 0xFE 0xFE 0x00 ..
                     $number = 8 * $i + $b + 1;
-                    // TODO: zone, partition, output - $raw[3]
-                    $violated[$number] = $this->sendCommand("EE" . self::ZONE . sprintf("%02s", dechex($number)));
+                    // TODO: self::PARTITION, self::OUTPUT, etc.
+                    $violated[$number] = $this->sendCommand("EE" . self::ZONEX . sprintf("%02s", dechex($number)));
                 }
             }
         }
@@ -213,15 +216,15 @@ class Integra
             $response = $this->trimWrapper($raw);
 
             $deviceNames = array(
-                0 => "INTEGRA 24",
-                1 => "INTEGRA 32",
-                2 => "INTEGRA 64 or 64 PLUS",
-                3 => "INTEGRA 128 or 128 PLUS",
-                4 => "INTEGRA 128-WRL",
-                8 => "INTEGRA 256 PLUS"
+                0 => array("INTEGRA 24"),
+                1 => array("INTEGRA 32"),
+                2 => array("INTEGRA 64 or 64 PLUS"),
+                3 => array("INTEGRA 128 or 128 PLUS"),
+                4 => array("INTEGRA 128-WRL"),
+                8 => array("INTEGRA 256 PLUS")
                 );
             $deviceId = (hexdec(bin2hex($raw[11])) & ((1 << 4) - 1)); // <- ($data2 & 0xff)
-            $type = (array_key_exists($deviceId, $deviceNames) ? $deviceNames[$deviceId] : "unknown (id " . $deviceId . ")");
+            $type = (array_key_exists($deviceId, $deviceNames) ? $deviceNames[$deviceId][0] : "unknown (id " . $deviceId . ")");
             $this->log("info", "Integra type : " . $type);
 
             // Date YYYYMMDD
@@ -300,20 +303,34 @@ class Integra
             $response = $this->trimWrapper($raw);
             $response = $this->toBytearray($response);
 
+            // id => name, zones, outputs
             $deviceNames = array(
-                0   => "INTEGRA 24",
-                1   => "INTEGRA 32",
-                2   => "INTEGRA 64",
-                3   => "INTEGRA 128",
-                4   => "INTEGRA 128-WRL SIM300",
-                132 => "INTEGRA 128-WRL LEON",
-                66  => "INTEGRA 64 PLUS",
-                67  => "INTEGRA 128 PLUS",
-                72  => "INTEGRA 256 PLUS"
+                0   => array("INTEGRA 24", 24, 20),
+                1   => array("INTEGRA 32", 32, 32),
+                2   => array("INTEGRA 64", 64, 64),
+                3   => array("INTEGRA 128", 128, 128),
+                4   => array("INTEGRA 128-WRL SIM300", 128, 128),
+                132 => array("INTEGRA 128-WRL LEON", 128, 128),
+                66  => array("INTEGRA 64 PLUS", 64, 64),
+                67  => array("INTEGRA 128 PLUS", 128, 128),
+                72  => array("INTEGRA 256 PLUS", 256, 256)
                 );
             $deviceId = hexdec($response[0]);
-            $type = (array_key_exists($deviceId, $deviceNames) ? $deviceNames[$deviceId] : "unknown (id " . $deviceId . ")");
-            $this->log("info", "Integra type : " . $type);
+
+            if(array_key_exists($deviceId, $deviceNames))
+            {
+            	$type = $deviceNames[$deviceId][0];
+            	$zones = $deviceNames[$deviceId][1];
+            	$outputs = $deviceNames[$deviceId][2];
+            }
+            else
+            {
+            	$type = "unknown (id " . $deviceId . ")";
+            	$zones = "?";
+            	$outputs = "?";
+            }
+            
+            $this->log("info", "Integra type : " . $type . "(" . $zones . " zones)");
 
             $version = array_map("chr", array_map("hexdec", array_slice($response, 1, 11)));
             $version = vsprintf("%s.%s%s %s%s%s%s-%s%s-%s%s", $version);
@@ -325,6 +342,8 @@ class Integra
 
             return array(
                 "type"      => $type,
+                "zones"		=> $zones,
+                "outputs"	=> $outputs,
                 "version"   => $version,
                 "language"  => $language,
                 "flashed"   => $flashed
