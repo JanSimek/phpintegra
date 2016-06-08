@@ -5,6 +5,10 @@ Special thanks to the [IntegraPy] project which was my starting point.
 
 [IntegraPy]: https://github.com/mkorz/IntegraPy
 
+## Note
+
+Currently, phpIntegra checks only 128 zones. If your model supports more than that, e.g. INTEGRA 256 PLUS, then you have to manually adapt the for loop in the ```checkZones()``` function.
+
 ## FAQ
 
 1. Which commands are supported?
