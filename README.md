@@ -1,9 +1,10 @@
 # phpintegra
 A PHP class for communication with the Satel ETHM-1 module for the Integra control panels.
 
-Special thanks to the [IntegraPy] project which was my starting point.
+Special thanks to the [IntegraPy] project which was my starting point. Another project that might be of interest to Satel owners is [openHAB] (home automation suite with Integra module).
 
 [IntegraPy]: https://github.com/mkorz/IntegraPy
+[openHAB]: https://github.com/openhab/openhab/tree/master/bundles/binding/org.openhab.binding.satel/src/main/java/org/openhab/binding/satel
 
 ## Note
 
