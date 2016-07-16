@@ -5,6 +5,7 @@
  * @author Jan Šimek
  * @version 0.1
  * @license https://opensource.org/licenses/MIT
+ * @package Satel\ETHM
  */
 namespace Satel;
 
@@ -15,23 +16,37 @@ require_once "Commands.php";
  */
 class ETHM
 {
-    // ETHM-1 host
+    /** 
+     * IP address of the ETHM module 
+     * @var string
+     */
     private $ip;
+
+    /** 
+     * Port number of the ETHM module 
+     * @var int
+     */
     private $port;
+
+    /** 
+     * Password for authenticated commands 
+     * @var int
+     */
     private $password;
 
     /**
-     * @var boolean toggles verbose debug messages
+     * @var boolean Toggles verbose debug messages
      */
     private $debug = false;
 
     /**
-     * @var boolean toggles logging to console
+     * @var boolean Toggles logging to console
      */
     private $logging = true;
     
     /**
-     * @var Command[] Contains response codes and their associated callback functions
+     * Contains response codes and their associated callback objects
+     * @var Command[] 
      */
     private $commands = array();
 

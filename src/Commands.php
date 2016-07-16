@@ -1,17 +1,26 @@
 <?php
-
+/**
+ * Response handlers for ETHM packets
+ * @package Satel\Commands
+ */
 namespace Satel\Command;
 
 require_once "Command.php";
 
 use Satel\Command as Command;
 
+/**
+ * Used by the ETHM class for sending outgoing commands
+ */
 class OutgoingCommand extends Command {
+	/**
+	 * Unused
+	 */
 	public function handle($response) {}
 }
 
 /**
- * @abstract Read device name
+ * Read device name
  *
  * **Response format**
  * <pre>
@@ -23,6 +32,9 @@ class OutgoingCommand extends Command {
  * </pre>
  */
 class xEE extends Command {
+	/**
+	 * @param string $response 0xEE (total 20 bytes or 21 bytes if it is device type to read number 2)
+	 */
 	public function handle($response) {
         $response = $this->trimWrapper($response, 6); // see above
         $response = $this->toBytearray($response);
@@ -33,20 +45,23 @@ class xEE extends Command {
 }
 
 /**
- * @abstract Zone report
+ * Zone report
  *
  * Handles the following codes:
- * * 0x00: Zones violation
- * * 0x01: Zones tamper
- * * 0x02: Zones alarm
- * * 0x03: Zones tamper alarm
- * * 0x04: Zones alarm memory
- * * 0x05: Zones tamper alarm memory
- * * 0x06: Zones bypass
- * * 0x07: Zones 'no violation trouble'
- * * 0x08: Zones 'long violation trouble'
+ * - 0x00: Zones violation
+ * - 0x01: Zones tamper
+ * - 0x02: Zones alarm
+ * - 0x03: Zones tamper alarm
+ * - 0x04: Zones alarm memory
+ * - 0x05: Zones tamper alarm memory
+ * - 0x06: Zones bypass
+ * - 0x07: Zones 'no violation trouble'
+ * - 0x08: Zones 'long violation trouble'
  */
 class x00 extends Command {
+	/**
+	 * @param string $response 0x00 + 16/32 bytes (*) 
+	 */
 	public function handle($response) {
             return $this->checkZones($response);
 	}
@@ -54,6 +69,7 @@ class x00 extends Command {
     /**
      * No clue what's happening here. Copied from Marcin's IntegraPy project
      * @link https://github.com/mkorz/IntegraPy/blob/master/integrademo.py#L185
+     * @param string $raw ETHM response
      */
     private function checkZones($raw)
     {
@@ -77,22 +93,48 @@ class x00 extends Command {
 }
 
 /**
- * @abstract Opened doors
+ * Opened doors
  *
  * Handles the following codes:
  * * 0x18: Doors opened
  * * 0x19: Doors opened long
  */
 class x18 extends Command {
+	/**
+	 * @param string $response 0x18 or 0x19 + 8 bytes
+	 */
 	public function handle($response) {
 		return bin2hex($response); // TODO
 	}
 }
 
 /**
- * @abstract Clock and basic system status
+ * Clock and basic system status
+ *
+ * **Response format**
+ * <pre>
+ * 7 bytes - time: YYYY-MM-DD hh:mm:ss = 0xYY , 0xYY , 0xMM, 0xDD, 0xhh, 0xmm, 0xss
+ * 1 byte  - .210 - day of the week (0 = Monday, 1 = Tuesday, ..., 6 = Sunday)
+ *           .7 - 1 = service mode
+ *           .6 - 1 = troubles in the system (= flashing TROUBLE LED in keypad)
+ * 1 byte  - .7 - 1 = ACU-100 are present in the system
+ *           .6 - 1 = INT-RX are present in the system
+ *           .5 - 1 = troubles memory is set in INTEGRA panel
+ *           .4 - 1 = Grade2/Grade3 option is set in INTEGRA panel
+ *        .3210 - INTEGRA type:
+ *                0 = INTEGRA 24
+ *                1 = INTEGRA 32
+ *                2 = INTEGRA 64 / INTEGRA 64 PLUS
+ *                3 = INTEGRA 128 / INTEGRA 128 PLUS
+ *                4 = INTEGRA 128-WRL
+ *                8 = INTEGRA 256 PLUS
+ *                (to read detailed type use 0x7E command)
+ * </pre>
  */
 class x1A extends Command {
+	/**
+	 * @param string $response 0x1A + 9 bytes
+	 */
 	public function handle($response) {
 			$raw = $response;
             $response = $this->trimWrapper($response);
@@ -159,7 +201,7 @@ class x1A extends Command {
 }
 
 /**
- * @abstract INT-RS/ETHM-1 module version
+ * INT-RS/ETHM-1 module version
  *
  * **Response format**
  * <pre>
@@ -171,6 +213,9 @@ class x1A extends Command {
  *       Since mine is one of those older ones, I couldn't test this command
  */
 class x7C extends Command {
+	/**
+	 * @param string $response 0x7C + 12 bytes
+	 */
 	public function handle($response) {
             $response = $this->trimWrapper($response);
             $response = $this->toBytearray($response);
@@ -187,7 +232,7 @@ class x7C extends Command {
 }
 
 /**
- * @abstract INTEGRA version
+ * INTEGRA version
  *
  * **Response format**
  * <pre>
@@ -201,6 +246,9 @@ class x7C extends Command {
  *       Since mine is one of those older ones, I couldn't test this command
  */
 class x7E extends Command {
+	/**
+	 * @param string $response 0x7E + 14 bytes
+	 */
 	public function handle($response) {
             $response = $this->trimWrapper($response);
             $response = $this->toBytearray($response);
@@ -252,11 +300,13 @@ class x7E extends Command {
 	}
 }
 
-
 /**
- * @abstract Returned command result
+ * Returned command result
  */
 class xEF extends Command {
+	/**
+	 * @param string $response 0xEF + 1 byte (result code)
+	 */
 	public function handle($response) {
 		switch (bin2hex($response[3])) {
             case 0x00:
@@ -306,194 +356,208 @@ class xEF extends Command {
 }
 
 /**
- * @abstract Read event
+ * Read event
+ * 
+ * **Response format**
+ *
+ * | Bit       |  .7   |  .6   |  .5   |  .4   |  .3   |  .2   |  .1   |  .0   |
+ * | :---------|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|
+ * | 1st byte: |   Y   |   Y   |   Z   |   E   |   S2  |   S2  |   S1  |   S1  |
+ * | 2nd byte: |   K   |   K   |   K   |   D   |   D   |   D   |   D   |   D   |
+ * | 3rd byte: |   M   |   M   |   M   |   M   |   T   |   T   |   T   |   T   |
+ * | 4th byte: |   t   |   t   |   t   |   t   |   t   |   t   |   t   |   t   |
+ * | 5th byte: |   P   |   P   |   P   |   P   |   P   |   R   |   C   |   C   |
+ * | 6th byte: |   c   |   c   |   c   |   c   |   c   |   c   |   c   |   c   |
+ * | 7th byte: |   n   |   n   |   n   |   n   |   n   |   n   |   n   |   n   |
+ * | 8th byte: |   S   |   S   |   S   |   u   |   u   |   u   |   u   |   u   |
  */
 class x8C extends Command {
+	/**
+	 * @param string $response 0x8C (15 bytes total)
+	 */
 	public function handle($response) {
-			$raw = $response;
-            $response = $this->trimWrapper($response);
-            $response = $this->toBytearray($response);
+		$raw = $response;
+        $response = $this->trimWrapper($response);
+        $response = $this->toBytearray($response);
 
-            $byte1 = hexdec(bin2hex($raw[3]));
+        $byte1 = hexdec(bin2hex($raw[3]));
 
-            // Show all bits in a byte. For debugging.
-            //for ($bit = 7; $bit >= 0; $bit--) {
-            //    echo "Bit " . $bit . ": " . (($byte1 >> $bit) & 1) . "\n";
-            //}
+        // Show all bits in a byte. For debugging.
+        //for ($bit = 7; $bit >= 0; $bit--) {
+        //    echo "Bit " . $bit . ": " . (($byte1 >> $bit) & 1) . "\n";
+        //}
 
-            $year = $this->sumBits($byte1, 7, 6);
-            $yearmod = date("Y") % 4;
-            $this->ethm->log("debug", "Year: " . $year . " should equal => (" . date("Y") . " % 4) = " . $yearmod);
-            
-            $notempty = (($byte1 >> 5) & 1);
-            $this->ethm->log("debug", "Not empty    : " . ($notempty ? "yes" : "no"));
-            $epresent = (($byte1 >> 4) & 1);
-            $this->ethm->log("debug", "Event present: " . ($epresent ? "yes" : "no"));
+        $year = $this->sumBits($byte1, 7, 6);
+        $yearmod = date("Y") % 4;
+        $this->ethm->log("debug", "Year: " . $year . " should equal => (" . date("Y") . " % 4) = " . $yearmod);
+        
+        $notempty = (($byte1 >> 5) & 1);
+        $this->ethm->log("debug", "Not empty    : " . ($notempty ? "yes" : "no"));
+        $epresent = (($byte1 >> 4) & 1);
+        $this->ethm->log("debug", "Event present: " . ($epresent ? "yes" : "no"));
 
-            $monitoringStatus = function ($code) {
-            
-                switch ($code) {
-                    case "00":
-                        return "[$code] new event, not processed by monitoring service";
-                    case "01":
-                        return "[$code] event sent";
-                    case "10":
-                        return "[$code] should not occur";
-                    case "11":
-                        return "[$code] event not monitored";
-                    default:
-                        return "[$code] wrong code";
-                }
-            };
-
-            $s2status = $monitoringStatus((($byte1 >> 3) & 1) . (($byte1 >> 2) & 1));
-            $s1status = $monitoringStatus((($byte1 >> 1) & 1) . (($byte1 >> 0) & 1));
-            $this->ethm->log("debug", "S2           : " . $s2status);
-            $this->ethm->log("debug", "S1           : " . $s1status);
-
-            $byte2 = hexdec(bin2hex($raw[4]));
-
-            $eventClass = function ($event) {
-            
-                switch ($event) {
-                    case "000":
-                        return "[$event] zone and tamper alarms";
-                    case "001":
-                        return "[$event] partition and expander alarms";
-                    case "010":
-                        return "[$event] arming, disarming, alarm clearing";
-                    case "011":
-                        return "[$event] zone bypasses and unbypasses";
-                    case "100":
-                        return "[$event] access control";
-                    case "101":
-                        return "[$event] troubles";
-                    case "110":
-                        return "[$event] user functions";
-                    case "111":
-                        return "[$event] system events";
-                    default:
-                        return "[$event] wrong event code";
-                }
-            };
-            $ekkk = $eventClass((($byte2 >> 7) & 1) . (($byte2 >> 6) & 1) . (($byte2 >> 5) & 1));
-            $this->ethm->log("info", "Event (KKK)  : " . $ekkk);
-
-            //$day = bindec((($byte2 >> 4) & 1) . (($byte2 >> 3) & 1) . (($byte2 >> 2) & 1) . (($byte2 >> 1) & 1) . (($byte2 >> 0) & 1));
-            $day = sprintf("%02d", $this->sumBits($byte2, 4, 0));
-
-            $byte3 = hexdec(bin2hex($raw[5]));
-
-            $month = sprintf("%02d", $this->sumBits($byte3, 7, 4));
-
-            $this->ethm->log("info", "Date:        : " . $day . "/" . $month);
-
-            $time1 = (($byte3 >> 3) & 1) . (($byte3 >> 2) & 1) . (($byte3 >> 1) & 1) . (($byte3 >> 0) & 1);
-
-            $byte4 = hexdec(bin2hex($raw[6]));
-
-            $time2 = (($byte4 >> 7) & 1) . (($byte4 >> 6) & 1) . (($byte4 >> 5) & 1) . (($byte4 >> 4) & 1) . (($byte4 >> 3) & 1) . (($byte4 >> 2) & 1) . (($byte4 >> 1) & 1) . (($byte3 >> 0) & 1);
-
-            $time = bindec($time1 . $time2);
-            $hours = sprintf("%02d", floor($time/60));
-            $minutes = sprintf("%02d", $time - $hours * 60);
-            $this->ethm->log("info", "Time         : " . $hours . ":" . $minutes);
-
-            $byte5 = hexdec(bin2hex($raw[7]));
-
-            $partition = $this->sumBits($byte5, 7, 3);
-            $this->ethm->log("info", "Partition No.: " . $partition);
-
-            $restore = (($byte5 >> 2) & 1) ;
-            $this->ethm->log("info", "Restore      : " . ($restore ? "yes" : "no"));
-
-            // event code CC in byte5
-            $evcode1 = (($byte5 >> 1) & 1) . (($byte5 >> 0) & 1);
-
-            // event code cccccccc in byte6
-            // - use command 0x8F to convert to text (we keep statuses stored in an array)
-            $byte6 = hexdec(bin2hex($raw[8]));
-            $evcode2 = (($byte6 >> 7) & 1) . (($byte6 >> 6) & 1) . (($byte6 >> 5) & 1) . (($byte6 >> 4) & 1) . (($byte6 >> 3) & 1) . (($byte6 >> 2) & 1) . (($byte6 >> 1) & 1) . (($byte6 >> 0) & 1);
-
-            // event code = CC + cccccccc
-            $evcode = bindec($evcode1 . $evcode2);
-            $this->ethm->log("info", "Event code   : " . $evcode);
-
-            foreach ($this->eventList as $event) {
-                if ($event[0] ==  $evcode && $event[1] == $restore) {
-                    $evtext = $event[3];
-                    $this->ethm->log("info", "Event text   : " . $event[3]);
-                }
+        $monitoringStatus = function ($code) {
+        
+            switch ($code) {
+                case "00":
+                    return "[$code] new event, not processed by monitoring service";
+                case "01":
+                    return "[$code] event sent";
+                case "10":
+                    return "[$code] should not occur";
+                case "11":
+                    return "[$code] event not monitored";
+                default:
+                    return "[$code] wrong code";
             }
+        };
 
-            /*      
-            byte7 - nnnnnnnn - source number (e.g. zone number, user number)
-                - if users numbering:
-                    1..240   - user
-                    241..248 - master
-                    249      - INT-AV
-                    251      - SMS
-                    252      - timer
-                    253      - function zone
-                    254      - Quick arm
-                    255      - service
-                - if zone|expander|keypad numbering:
-                    1..128   - zone 
-                    129..192 - expander address
-                    INTEGRA 24 and 32:
-                        193..196 - real LCD keypads or INT-RS modules at address 0..3
-                        197..200 - keypad in GuardX connected to LCD keypad at address 0..3, or www keypad in internet browser connected to ETHM-1 at address 0..3
-                        201      - keypad in DloadX connected to INTEGRA via RS cable
-                        202      - keypad in DloadX connected to INTEGRA via TEL link (modem)
-                    INTEGRA 64, 128 and 128-WRL:
-                        193..200 - real LCD keypads or INT-RS modules at address 0..7
-                        201..208 - keypad in GuardX connected to LCD keypad at address 0..7, or www keypad in internet browser connected to ETHM-1 at address 0..7
-                        209      - keypad in DloadX connected to INTEGRA via RS cable
-                        210      - keypad in DloadX connected to INTEGRA via TEL link (modem)
-                - if output|expander numbering:
-                    1..128    - output 
-                    129..192  - supply output in expander at address 0..63
+        $s2status = $monitoringStatus((($byte1 >> 3) & 1) . (($byte1 >> 2) & 1));
+        $s1status = $monitoringStatus((($byte1 >> 1) & 1) . (($byte1 >> 0) & 1));
+        $this->ethm->log("debug", "S2           : " . $s2status);
+        $this->ethm->log("debug", "S1           : " . $s1status);
 
-            Note: in INTEGRA 256 PLUS - if event record describes zone or output (1..128), so read the uuuuu field and: if uuuuu = 00000 - the zone or output number is 1..128,
-            if uuuuu = 00001 - add 128 to the zone or output number - i.e. 1..128 becomes 129..256.
-            */
-            $byte7 = hexdec(bin2hex($raw[9]));
-            $this->ethm->log("info", "Source number: " . $byte7);
+        $byte2 = hexdec(bin2hex($raw[4]));
 
-            //      byte8 - SSSuuuuu            
-            $byte8 = hexdec(bin2hex($raw[10]));
+        $eventClass = function ($event) {
+        
+            switch ($event) {
+                case "000":
+                    return "[$event] zone and tamper alarms";
+                case "001":
+                    return "[$event] partition and expander alarms";
+                case "010":
+                    return "[$event] arming, disarming, alarm clearing";
+                case "011":
+                    return "[$event] zone bypasses and unbypasses";
+                case "100":
+                    return "[$event] access control";
+                case "101":
+                    return "[$event] troubles";
+                case "110":
+                    return "[$event] user functions";
+                case "111":
+                    return "[$event] system events";
+                default:
+                    return "[$event] wrong event code";
+            }
+        };
+        $ekkk = $eventClass((($byte2 >> 7) & 1) . (($byte2 >> 6) & 1) . (($byte2 >> 5) & 1));
+        $this->ethm->log("info", "Event (KKK)  : " . $ekkk);
 
-            // SSS - object number (0..7)
-            // FIXME: sumBits()
-            $objectn = (($byte8 >> 7) & 1) . (($byte8 >> 6) & 1) . (($byte8 >> 5) & 1);
-            $this->ethm->log("info", "Object number: " . $objectn);
+        //$day = bindec((($byte2 >> 4) & 1) . (($byte2 >> 3) & 1) . (($byte2 >> 2) & 1) . (($byte2 >> 1) & 1) . (($byte2 >> 0) & 1));
+        $day = sprintf("%02d", $this->sumBits($byte2, 4, 0));
 
-            // uuuuu - user control number
-            // FIXME: sumBits()
-            $usern = (($byte8 >> 4) & 1) . (($byte8 >> 3) & 1) . (($byte8 >> 2) & 1) . (($byte8 >> 1) & 1) . (($byte8 >> 0) & 1);
-            $this->ethm->log("info", "User control#: " . $usern);
+        $byte3 = hexdec(bin2hex($raw[5]));
+
+        $month = sprintf("%02d", $this->sumBits($byte3, 7, 4));
+
+        $this->ethm->log("info", "Date:        : " . $day . "/" . $month);
+
+        $time1 = (($byte3 >> 3) & 1) . (($byte3 >> 2) & 1) . (($byte3 >> 1) & 1) . (($byte3 >> 0) & 1);
+
+        $byte4 = hexdec(bin2hex($raw[6]));
+
+        $time2 = (($byte4 >> 7) & 1) . (($byte4 >> 6) & 1) . (($byte4 >> 5) & 1) . (($byte4 >> 4) & 1) . (($byte4 >> 3) & 1) . (($byte4 >> 2) & 1) . (($byte4 >> 1) & 1) . (($byte3 >> 0) & 1);
+
+        $time = bindec($time1 . $time2);
+        $hours = sprintf("%02d", floor($time/60));
+        $minutes = sprintf("%02d", $time - $hours * 60);
+        $this->ethm->log("info", "Time         : " . $hours . ":" . $minutes);
+
+        $byte5 = hexdec(bin2hex($raw[7]));
+
+        $partition = $this->sumBits($byte5, 7, 3);
+        $this->ethm->log("info", "Partition No.: " . $partition);
+
+        $restore = (($byte5 >> 2) & 1) ;
+        $this->ethm->log("info", "Restore      : " . ($restore ? "yes" : "no"));
+
+        // event code CC in byte5
+        $evcode1 = (($byte5 >> 1) & 1) . (($byte5 >> 0) & 1);
+
+        // event code cccccccc in byte6
+        // - use command 0x8F to convert to text (we keep statuses stored in an array)
+        $byte6 = hexdec(bin2hex($raw[8]));
+        $evcode2 = (($byte6 >> 7) & 1) . (($byte6 >> 6) & 1) . (($byte6 >> 5) & 1) . (($byte6 >> 4) & 1) . (($byte6 >> 3) & 1) . (($byte6 >> 2) & 1) . (($byte6 >> 1) & 1) . (($byte6 >> 0) & 1);
+
+        // event code = CC + cccccccc
+        $evcode = bindec($evcode1 . $evcode2);
+        $this->ethm->log("info", "Event code   : " . $evcode);
+
+        foreach ($this->eventList as $event) {
+            if ($event[0] ==  $evcode && $event[1] == $restore) {
+                $evtext = $event[3];
+                $this->ethm->log("info", "Event text   : " . $event[3]);
+            }
+        }
+
+        /*      
+        byte7 - nnnnnnnn - source number (e.g. zone number, user number)
+            - if users numbering:
+                1..240   - user
+                241..248 - master
+                249      - INT-AV
+                251      - SMS
+                252      - timer
+                253      - function zone
+                254      - Quick arm
+                255      - service
+            - if zone|expander|keypad numbering:
+                1..128   - zone 
+                129..192 - expander address
+                INTEGRA 24 and 32:
+                    193..196 - real LCD keypads or INT-RS modules at address 0..3
+                    197..200 - keypad in GuardX connected to LCD keypad at address 0..3, or www keypad in internet browser connected to ETHM-1 at address 0..3
+                    201      - keypad in DloadX connected to INTEGRA via RS cable
+                    202      - keypad in DloadX connected to INTEGRA via TEL link (modem)
+                INTEGRA 64, 128 and 128-WRL:
+                    193..200 - real LCD keypads or INT-RS modules at address 0..7
+                    201..208 - keypad in GuardX connected to LCD keypad at address 0..7, or www keypad in internet browser connected to ETHM-1 at address 0..7
+                    209      - keypad in DloadX connected to INTEGRA via RS cable
+                    210      - keypad in DloadX connected to INTEGRA via TEL link (modem)
+            - if output|expander numbering:
+                1..128    - output 
+                129..192  - supply output in expander at address 0..63
+
+        Note: in INTEGRA 256 PLUS - if event record describes zone or output (1..128), so read the uuuuu field and: if uuuuu = 00000 - the zone or output number is 1..128,
+        if uuuuu = 00001 - add 128 to the zone or output number - i.e. 1..128 becomes 129..256.
+        */
+        $byte7 = hexdec(bin2hex($raw[9]));
+        $this->ethm->log("info", "Source number: " . $byte7);
+
+        //      byte8 - SSSuuuuu            
+        $byte8 = hexdec(bin2hex($raw[10]));
+
+        // SSS - object number (0..7)
+        // FIXME: sumBits()
+        $objectn = (($byte8 >> 7) & 1) . (($byte8 >> 6) & 1) . (($byte8 >> 5) & 1);
+        $this->ethm->log("info", "Object number: " . $objectn);
+
+        // uuuuu - user control number
+        // FIXME: sumBits()
+        $usern = (($byte8 >> 4) & 1) . (($byte8 >> 3) & 1) . (($byte8 >> 2) & 1) . (($byte8 >> 1) & 1) . (($byte8 >> 0) & 1);
+        $this->ethm->log("info", "User control#: " . $usern);
 
 
-            $evindex = $response[8] . $response[9] . $response[10];
-            $this->ethm->log("info", "Event index  : " . $evindex);
+        $evindex = $response[8] . $response[9] . $response[10];
+        $this->ethm->log("info", "Event index  : " . $evindex);
 
-            return array(
-                "yearmod"   => $yearmod,
-                "notempty"  => $notempty,
-                "epresent"  => $epresent,
-                "s2status"  => $s2status,
-                "s1status"  => $s1status,
-                "ekkk"      => $ekkk,
-                "date"      => $day . "/" . $month,
-                "time"      => $hours . ":" . $minutes,
-                "partition" => $partition,
-                "restore"   => $restore,
-                "evcode"    => $evcode,
-                "evtext"    => $evtext,
-                "evindex"   => $evindex
-                );
+        return array(
+            "yearmod"   => $yearmod,
+            "notempty"  => $notempty,
+            "epresent"  => $epresent,
+            "s2status"  => $s2status,
+            "s1status"  => $s1status,
+            "ekkk"      => $ekkk,
+            "date"      => $day . "/" . $month,
+            "time"      => $hours . ":" . $minutes,
+            "partition" => $partition,
+            "restore"   => $restore,
+            "evcode"    => $evcode,
+            "evtext"    => $evtext,
+            "evindex"   => $evindex
+            );
 	}
 }
-
-
 ?>

@@ -1,20 +1,41 @@
 <?php
+/**
+ * @package Satel\Command
+ */
 namespace Satel;
 
+/**
+ * Holds all the communitaction and parsing logic for the ETHM commands
+ */
 abstract class Command {
+	/**
+	 * ETHM module
+	 * @var \Satel\ETHM
+	 */
 	protected $ethm;
 
-    const PARTITION	= "00"; // partition (1..32)
-    const ZONE		= "01"; // zone (1..128), in INTEGRA 256 PLUS - up to 256
-    const USER		= "02"; // user (1..255) (*)
-    const EXPANDER	= "03"; // expander/LCD (129..192 - expander, 193..210 - LCD)
-    const OUTPUT	= "04"; // output (1..128), in INTEGRA 256 PLUS - up to 256
-    const ZONEX		= "05"; // zone (1..128) with partition assignment (*), in INTEGRA 256 PLUS - up to 256
+	/** partition (1 - 32) */
+	const PARTITION	= "00"; 
+	/** zone (1 - 128), in INTEGRA 256 PLUS - up to 256 */
+	const ZONE		= "01"; 
+	/** user (1 - 255) (*) */
+	const USER		= "02"; 
+	/** expander/LCD (129 - 192 = expander, 193 - 210 = LCD) */
+	const EXPANDER	= "03"; 
+	/** output (1 - 128), in INTEGRA 256 PLUS - up to 256 */
+	const OUTPUT	= "04";
+	/** zone (1 - 128) with partition assignment (*), in INTEGRA 256 PLUS - up to 256 */
+	const ZONEX		= "05";
 
 	public function __construct($ethm) {
 		$this->ethm = $ethm;
 	}
 
+	/**
+	 * Handler for incoming response from ETHM
+	 * @param string $response
+	 * @return mixed Parsed response
+	 */
 	abstract public function handle($response);
 
     /**
@@ -164,10 +185,12 @@ abstract class Command {
     }
 
     /**
-     * - the first column is the event code (CCcccccccc)
-     * - the second column is new/restore (R)
-     * - the third column is kind of long description (see Appendix 2)
-     * - the fourth column is event text description
+     * List of event IDs and their messages
+     *
+     * - the **1st** column is the event code (CCcccccccc)
+     * - the **2nd** column is new/restore (R)
+     * - the **3rd** column is kind of long description (see Appendix 2)
+     * - the **4th** column is event text description
      * @var array[]
      */
     protected $eventList = array(
