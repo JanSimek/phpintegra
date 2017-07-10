@@ -128,7 +128,7 @@ abstract class Command {
     }
 
     /**
-     * @abstract I have no idea what's going on here
+     * @abstract Calculate command checksum. I have no idea what's going on here
      * @author   mkorz
      * @link     https://github.com/mkorz
      */

@@ -9,7 +9,7 @@
  */
 namespace Satel;
 
-require_once "Commands.php";
+require_once "CommandList.php";
 
 /**
  * A PHP class for communication with the Satel ETHM-1 module for the Integra control panels.
@@ -173,7 +173,7 @@ class ETHM
         0x7D +1 byte - read zone temperature 0x7D + 3 bytes (answer can be delayed up to 5s): 
         */
         $this->commands[0x7E] = new Command\x7E($this); // INTEGRA version
-
+        $this->commands[0x7F] = new Command\x7F($this); // List commands with new data available
         $this->commands[0xEF] = new Command\xEF($this); // Returned command result
         $this->commands[0x8C] = new Command\x8C($this); // Read event
     }

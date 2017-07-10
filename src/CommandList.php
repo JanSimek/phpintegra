@@ -116,7 +116,7 @@ class x18 extends Command {
  * 7 bytes - time: YYYY-MM-DD hh:mm:ss = 0xYY , 0xYY , 0xMM, 0xDD, 0xhh, 0xmm, 0xss
  * 1 byte  - .210 - day of the week (0 = Monday, 1 = Tuesday, ..., 6 = Sunday)
  *           .7 - 1 = service mode
- *           .6 - 1 = troubles in the system (= flashing TROUBLE LED in keypad)
+ *           .6 - 1 = troubles in the system (= flashing TROUBLE LED in keypad, can be cleared by sending 0x8B command)
  * 1 byte  - .7 - 1 = ACU-100 are present in the system
  *           .6 - 1 = INT-RX are present in the system
  *           .5 - 1 = troubles memory is set in INTEGRA panel
@@ -229,6 +229,39 @@ class x7C extends Command {
 
             return array("version" => $version, "canserve32" => $canserve32);
 	}
+}
+
+/**
+ * List commands with new data available
+ * @todo this is just a stub. I don't know how to erase/clear command status (1)
+ */
+class x7F extends Command {
+    /*
+     * @param string $response 0x7F + 5 bytes
+     *
+     * (each bit is set when new data is collected in corresponding command,
+     * each bit is cleared after reading the corresponding command)
+     */
+    public function handle($response)
+    {
+        //$response = $this->trimWrapper($response);
+        //$response = $this->toBytearray($response);
+
+        // FIXME: always returns 1 even though states should be cleared after reading each command
+        for ($b = 0; $b < 5; $b++) { 
+            $byte = hexdec(bin2hex($response[3+$b]));
+            $this->ethm->log("debug", "Byte #" . $b);
+            for ($i=0; $i<8; $i++) {
+              var_dump((ord($response[3+$b]) & (1<<$i))>>$i);
+            }
+            /*for ($bit=7; $bit >= 0; $bit--) { 
+                $value = (($byte >> $bit) & 1);
+                $this->ethm->log("debug", "\tbit #" . $bit . ": " . $value);
+            }*/
+        }
+
+        return $response;
+    }
 }
 
 /**
