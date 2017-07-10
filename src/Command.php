@@ -189,7 +189,7 @@ abstract class Command {
      *
      * - the **1st** column is the event code (CCcccccccc)
      * - the **2nd** column is new/restore (R)
-     * - the **3rd** column is kind of long description (see Appendix 2)
+     * - the **3rd** column is kind of long description (@see Command::$eventCategory)
      * - the **4th** column is event text description
      * @var array[]
      */
@@ -570,6 +570,28 @@ abstract class Command {
     array(1020 , 0, 1,'LCD/PTSA/ETHM-1 initiation error'),
     array(1021 , 0, 1,'LCD/PTSA/ETHM-1 initiation ok'),
     array(1022 , 0, 0,'Downloading request from ETHM-1 module')
+    );
+
+    protected $eventCategory = array(
+        0 => 'no additional description',
+        1 => 'partition/zone|expander|keypad',
+        2 => 'partition/user',
+        3 => 'partition keypad/user (partition keypad address in PPPPPR) (not LCD keypad, but LED partition keypad, e.g. INT-S)',
+        4 => ' zone|expander|keypad',
+        5 => 'partition',
+        6 => 'keypad/user',
+        7 => 'user',
+        8 => 'expander reader head',
+        9 => 'telephone',
+        10 => 'output of telephone relay type',
+        11 => 'partition/data bus',
+        12 => 'partition/output|expander (partition not important for main panel outputs)',
+        13 => 'partition/output|expander (partition not important for outputs)',
+        14 => 'telephone in PPPPP/user (telephone: 0 - unknown, 1.. - phone number)',
+        15 => 'partition/timer',
+        30 => 'beginning of TCP/IP address (keypad address in PPPPP)', 
+        31 => '3rd and 4th bytes of TCP/IP address', 
+        32 => 'partition/zone or ABAX output'
     );
 }
 ?>

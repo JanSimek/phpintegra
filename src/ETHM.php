@@ -124,13 +124,54 @@ class ETHM
         $this->commands[0x06] = new Command\x00($this); // Zones bypass
         $this->commands[0x07] = new Command\x00($this); // Zones 'no violation trouble'
         $this->commands[0x08] = new Command\x00($this); // Zones 'long violation trouble'
-
+        /*
+        0x09 armed partitions (suppressed)      0x09 + 4 bytes 
+        0x0A armed partitions (really)          0x0A + 4 bytes 
+        0x0B partitions armed in mode 2         0x0B + 4 bytes 
+        0x0C partitions armed in mode 3         0x0C + 4 bytes 
+        0x0D partitions with 1st code entered   0x0D + 4 bytes 
+        0x0E partitions entry time(oid)         0x0E + 4 bytes 
+        0x0F partitions exit time >10s          0x0F + 4 bytes 
+        0x10 partitions exit time <10s          0x10 + 4 bytes 
+        0x11 partitions temporary blocked       0x11 + 4 bytes 
+        0x12 partitions blocked for guard round 0x12 + 4 bytes 
+        0x13 partitions alarm                   0x13 + 4 bytes 
+        0x14 partitions fire alarm              0x14 + 4 bytes 
+        0x15 partitions alarm memory            0x15 + 4 bytes 
+        0x16 partitions fire alarm memory       0x16 + 4 bytes
+        0x17 outputs state                      0x17 + 16/32 bytes (*) 
+        */
         $this->commands[0x18] = new Command\x18($this); // Doors opened
         $this->commands[0x19] = new Command\x18($this); // Doors opened long
 
         $this->commands[0x1A] = new Command\x1A($this); // Clock and basic system status
-        
+        /*
+        0x1B troubles part 1                    0x1B + 47 bytes (see description below) 
+        0x1C troubles part 2                    0x1C + 26 bytes (see description below) 
+        0x1D troubles part 3                    0x1D + 60 bytes (see description below) 
+        0x1E troubles part 4                    0x1E + 30 bytes (see description below) 
+        0x1F troubles part 5                    0x1F + 31 bytes (see description below) 
+        0x20 troubles memory part 1             0x20 + 47 bytes (see description below) 
+        0x21 troubles memory part 2             0x21 + 39 bytes (see description below)
+        0x22 troubles memory part 3             0x22 + 60 bytes (see description below) 
+        0x23 troubles memory part 4             0x23 + 30 bytes (see description below) 
+        0x24 troubles memory part 5             0x24 + 48 bytes (see description below) 
+        0x25 partitions with violated zones     0x25 + 4 bytes 
+        0x26 zones isolate                      0x26 + 16/32 bytes (*) 
+        0x27 partitions with verified alarms    0x27 + 4 bytes 
+        0x28 zones masked                       0x28 + 16/32 bytes (*) (**) 
+        0x29 zones masked memory                0x29 + 16/32 bytes (*) (**) 
+        0x2A partitions armed in mode 1         0x2A + 4 bytes (**) 
+        0x2B partitions with warning alarms     0x2B + 4 bytes (**) 
+        0x2C troubles part 6                    0x2C + 45 bytes (see description below) (***) 
+        0x2D troubles part 7                    0x2D + 47 bytes (see description below) (***) 
+        0x2E troubles memory part 6             0x2E + 45 bytes (see description below) (***) 
+        0x2F troubles memory part 7             0x2F + 48 bytes (see description below) (***)
+        */
         $this->commands[0x7C] = new Command\x7C($this); // INT-RS/ETHM-1 module version
+        /*
+        0x7D +1 byte - read zone temperature 0x7D + 3 bytes (answer can be delayed up to 5s): 
+        */
         $this->commands[0x7E] = new Command\x7E($this); // INTEGRA version
 
         $this->commands[0xEF] = new Command\xEF($this); // Returned command result

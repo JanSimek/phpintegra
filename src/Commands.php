@@ -487,8 +487,9 @@ class x8C extends Command {
 
         foreach ($this->eventList as $event) {
             if ($event[0] ==  $evcode && $event[1] == $restore) {
+                $evcategory = $this->eventCategory[$event[2]]; // $event[2];
                 $evtext = $event[3];
-                $this->ethm->log("info", "Event text   : " . $event[3]);
+                $this->ethm->log("info", "Event text   : " . $event[3]) . " [" . $this->eventCategory[$event[2]] . "]";
             }
         }
 
@@ -556,6 +557,7 @@ class x8C extends Command {
             "restore"   => $restore,
             "evcode"    => $evcode,
             "evtext"    => $evtext,
+            "evcategory"=> $evcategory,
             "evindex"   => $evindex
             );
 	}
