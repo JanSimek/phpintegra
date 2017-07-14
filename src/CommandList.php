@@ -595,4 +595,173 @@ class x8C extends Command {
             );
 	}
 }
+
+/**
+ * Read info about the current user (identified by the password)
+ */
+class xE0 extends Command {
+    /**
+     * @param string $response 0xE0 (total 30 bytes)
+     */
+    public function handle($response) {
+        $response = $this->trimWrapper($response);
+        $response = $this->toBytearray($response);
+        //$response = array_map("chr", array_map("hexdec", $response));
+
+        $userId = hexdec($response[0]);
+
+        if($userId >= 1 && $userId <= 240)
+        {
+            $type = "user";
+        } else if ($userId >= 241 && $userId <= 248) {
+            $type = "master";
+        } else { // 255
+            $type = "service";
+        }
+
+        $this->ethm->log("debug", "User ID: " . $userId . " (" . $type . ")");
+
+        $telephone = hexdec($response[1]) .  hexdec($response[2]);
+
+        $this->ethm->log("debug", "Telephone: " . $telephone . ($type != "user" ? " (should be 00 for master or X0 for service)" : ""));
+
+        $partitions = array_map("hexdec", array_slice($response, 3, 4));
+
+        $this->ethm->log("debug", "User partitions: " . implode($partitions, ", "));
+
+        $byte7 = hexdec($response[7]);
+
+        $codeNotChanged = (($byte7 >> 7) & 1);
+        $this->ethm->log("debug", "User hasn't changed his code yet: " . ($codeNotChanged ? "YES" : "NO"));
+        $codeDuplicate  = (($byte7 >> 6) & 1);
+        $this->ethm->log("debug", "User's code is duplicate with another user: " . ($codeDuplicate ? "YES" : "NO"));
+        $zones          = (($byte7 >> 5) & 1);
+        $this->ethm->log("debug", "user right - zones isolating: " . $zones);
+        $telChanged     = (($byte7 >> 4) & 1);
+        $this->ethm->log("debug", "User has changed his telephone: " . ($telChanged ? "YES" : "NO"));
+        
+        switch($this->sumBits($byte7, 0, 3))
+        {
+            case 1:
+                $userType = "single";
+                break;
+            case 2:
+                $userType = "time renewable";
+                break;
+            case 3:
+                $userType = "time not renewable";
+                break;
+            case 4:
+                $userType = "duress";
+                break;
+            case 5:
+                $userType = "mono outputs";
+                break;
+            case 6:
+                $userType = "bi outputs";
+                break;
+            case 7:
+                $userType = "partitions temporarily blocking";
+                break;
+            case 8:
+                $userType = "access to cash machine";
+                break;
+            case 9:
+                $userType = "guard";
+                break;
+            case 10:
+                $userType = "schedule";
+                break;
+            case 0:
+            default:
+                $userType = "normal";
+                break;
+        }
+
+        $this->ethm->log("debug", "User type: " . $userType);
+        
+        $userTime = hexdec($response[8]);
+
+        $this->ethm->log("debug", "User time: " . $userTime); // What is this?
+
+        // User rights
+        $byte9 = hexdec($response[9]);
+
+        $rArming        = (($byte9 >> 7) & 1);
+        $this->ethm->log("debug", "Right to arm: " . ($rArming ? "YES" : "NO"));
+        $rDisarming     = (($byte9 >> 6) & 1);
+        $this->ethm->log("debug", "Right to disarm: " . ($rDisarming ? "YES" : "NO"));
+        $rAlClearPart   = (($byte9 >> 5) & 1);
+        $this->ethm->log("debug", "Right to clear alarm in own partitions: " . ($rAlClearPart ? "YES" : "NO"));
+        $rAlClearObj    = (($byte9 >> 4) & 1);
+        $this->ethm->log("debug", "Right to clear alarm in own object: " . ($rAlClearObj ? "YES" : "NO"));
+        $rAlClearSys    = (($byte9 >> 3) & 1);
+        $this->ethm->log("debug", "Right to clear alarm in the whole system: " . ($rAlClearSys ? "YES" : "NO"));
+        $rArmDefer      = (($byte9 >> 2) & 1);
+        $this->ethm->log("debug", "Right to arm deferring: " . ($rArmDefer ? "YES" : "NO"));
+        $rCodeChange    = (($byte9 >> 1) & 1);
+        $this->ethm->log("debug", "Right to change code: " . ($rCodeChange ? "YES" : "NO"));
+        $rUserEdit      = (($byte9 >> 0) & 1);
+        $this->ethm->log("debug", "Right to edit users: " . ($rUserEdit ? "YES" : "NO"));
+
+        $byte10 = hexdec($response[9]);
+
+        $rBypass        = (($byte10 >> 7) & 1);
+        $this->ethm->log("debug", "Right to bypass zones: " . ($rBypass ? "YES" : "NO"));
+        $rClock         = (($byte10 >> 6) & 1);
+        $this->ethm->log("debug", "Right to set clock: " . ($rClock ? "YES" : "NO"));
+        $rViewTroubles  = (($byte10 >> 5) & 1);
+        $this->ethm->log("debug", "Right to view troubles: " . ($rViewTroubles ? "YES" : "NO"));
+        $rViewEvents    = (($byte10 >> 4) & 1);
+        $this->ethm->log("debug", "Right to view events: " . ($rViewEvents ? "YES" : "NO"));
+        $rResetZones    = (($byte10 >> 3) & 1);
+        $this->ethm->log("debug", "Right to reset zones: " . ($rResetZones ? "YES" : "NO"));
+        $rChangeOptions = (($byte10 >> 2) & 1);
+        $this->ethm->log("debug", "Right to change options: " . ($rChangeOptions ? "YES" : "NO"));
+        $rTest          = (($byte10 >> 1) & 1);
+        $this->ethm->log("debug", "Right to test: " . ($rTest ? "YES" : "NO"));
+        $rDownloading      = (($byte10 >> 0) & 1);
+        $this->ethm->log("debug", "Right to use downloading: " . ($rDownloading ? "YES" : "NO"));
+
+        $byte11 = hexdec($response[9]);
+
+        $rAllwaysDisarm     = (($byte11 >> 7) & 1);
+        $this->ethm->log("debug", "Right to always disarm (even if armed by another user): " . ($rAllwaysDisarm ? "YES" : "NO"));
+        $rVoiceClear        = (($byte11 >> 6) & 1);
+        $this->ethm->log("debug", "Right to clear voice messaging: " . ($rVoiceClear ? "YES" : "NO"));
+        $rGuardX            = (($byte11 >> 5) & 1);
+        $this->ethm->log("debug", "Right to use GuardX: " . ($rGuardX ? "YES" : "NO"));
+        $rAccessTemporaryParts = (($byte11 >> 4) & 1);
+        $this->ethm->log("debug", "Right to access temporarily blocked partitions: " . ($rAccessTemporaryParts ? "YES" : "NO"));
+        $r1stCode           = (($byte11 >> 3) & 1);
+        $this->ethm->log("debug", "Right to enter 1st code: " . ($r1stCode ? "YES" : "NO"));
+        $r2ndCode = (($byte11 >> 2) & 1);
+        $this->ethm->log("debug", "Right to enter 2nd code: " . ($r2ndCode ? "YES" : "NO"));
+        $rOutputs           = (($byte11 >> 1) & 1);
+        $this->ethm->log("debug", "Right to control outputs: " . ($rOutputs ? "YES" : "NO"));
+        $rClearLatchedOut   = (($byte11 >> 0) & 1);
+        $this->ethm->log("debug", "Right to clear latched outputs: " . ($rClearLatchedOut ? "YES" : "NO"));
+
+        $username = implode(array_map("chr", array_map("hexdec", array_slice($response, 12, 16))));
+
+        $this->ethm->log("debug", "Username: " . $username);
+
+        $byte12 = hexdec($response[13]);
+
+        $userRightSimple     = (($byte12 >> 7) & 1);
+        $this->ethm->log("debug", "user right - Simple user: " . ($userRightSimple ? "YES" : "NO"));
+        $userRightMaster        = (($byte12 >> 6) & 1);
+        $this->ethm->log("debug", "user right - Master: " . ($userRightMaster ? "YES" : "NO"));
+        $needPrefixChange            = (($byte12 >> 5) & 1);
+        $this->ethm->log("debug", "Need to change prefix (only for master or user with master rights): " . ($needPrefixChange ? "YES" : "NO"));
+        $needTelephoneChange = (($byte12 >> 4) & 1);
+        $this->ethm->log("debug", "Need to change telephone code (only for users): " . ($needTelephoneChange ? "YES" : "NO"));
+        $needCodeChange           = (($byte12 >> 3) & 1);
+        $this->ethm->log("debug", "Need to change code (only for time renewable users): " . ($needCodeChange ? "YES" : "NO"));
+        $objectNo = $this->sumBits($byte12, 0, 2);
+        $this->ethm->log("debug", "Object number (0-7 or 0 if service): " . $objectNo);
+
+        return array(); // TODO: ...
+    }
+}
 ?>

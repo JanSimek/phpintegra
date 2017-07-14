@@ -5,13 +5,21 @@ require_once "src/ETHM.php";
 // Ip address of your ETHM-1 module can be changed inside the integra panel:
 // Service mode -> Structure -> Hardware -> LCD Keypads -> Settings -> [select the ETHM module from the list of devices]
 
-$ethm = new Satel\ETHM("192.168.1.112");
+$ethm = new Satel\ETHM("192.168.1.112", 7094, "1234");
 
-$ethm->setLogging(false); // enable/disable log output
-$ethm->setDebug(false); // enable/disable debug output
+$ethm->setLogging(true); // enable/disable log output
+$ethm->setDebug(true); // enable/disable debug output
+
+//$ethm->getCurrentUserInfo();
 
 // Clear states
-//$ethm->send("8B1234FFFFFFFFFFFF");
+// FIXME: accepts any king of password and the response is always OK? WTF?
+$ethm->send("8B1234FFFF");
+
+// Set time
+// FIXME: doesn't work. No response from Integra. Possibly their fault
+$ethm->send("8E1234FFFF20170714105039");
+//$ethm->syncTime();
 
 $mask = "|%10.10s | %-30.30s |\n"; // nice printf formatting
 
@@ -55,7 +63,7 @@ $tamperedZones = $ethm->send("01");
 !empty(array_filter($tamperedZones)) or printf("-> No tampered zones");
 
 foreach ($tamperedZones as $number => $name) {
-    printf("[%3s] %s", $number, $name);
+    printf("[%3s] %s\n", $number, $name);
 };
 
 echo "\nOpened doors: " . $ethm->send("18") . "\n";
@@ -72,7 +80,7 @@ for ($i = 0; $i <= 8; $i++) {
     }
 
     foreach ($zones as $number => $name) {
-        printf("[%3s] %s", $number, $name);
+        printf("[%3s] %s\n", $number, $name);
     };
 }
 

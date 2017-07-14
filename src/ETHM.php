@@ -78,13 +78,55 @@ class ETHM
     {
         $this->ip       = $ip;
         $this->port     = $port;
-        $this->password = $password;
+
+        if(!empty($password)) $this->setPassword($password);
 
         $this->registerCmdHandlers();
     }
 
+    /**
+     * Integra expects password either with or without prefix in
+     * the following format: 1234FFFF (password is 1234)
+     */
+    public function setPassword($password)
+    {
+        $this->password = str_pad($password, 8, "F", STR_PAD_RIGHT);
+    }
+
+    public function getPassword()
+    {
+        return $this->password;
+    }
+
     public function getIP() { return $this->ip; }
     public function getPort() { return $this->port; }
+
+    /**
+     * Set time on Integra to the current system time
+     * FIXME: no response from Integra. Possibly their fault.
+     */
+    public function syncTime()
+    {
+        if(empty($this->password)) 
+        {
+            $this->log("error", "You have to set your password first");
+            return false;
+        }
+
+        $date = date("YmdHis");
+        $this->log("info", "Setting time on Integra to " . $date);
+        $this->send("8E" . $this->getPassword() . $date);
+    }
+
+    /**
+     * Get current user info (identified by the stored password)
+     * 
+     * If the wrong password is set we get an 0xEF -> 0x01 error
+     */ 
+    public function getCurrentUserInfo()
+    {
+        $this->send("E0" . $this->getPassword());
+    }
 
     /**
      * @abstract Send command to the ETHM module
@@ -92,6 +134,8 @@ class ETHM
     public function send($command) {
         $cmd = new Command\OutgoingCommand($this);
         $response = $cmd->sendCommand($command);
+
+        if($response == null) return false;
 
         return $this->handleResponse($response);
     }
@@ -176,6 +220,8 @@ class ETHM
         $this->commands[0x7F] = new Command\x7F($this); // List commands with new data available
         $this->commands[0xEF] = new Command\xEF($this); // Returned command result
         $this->commands[0x8C] = new Command\x8C($this); // Read event
+
+        $this->commands[0xE0] = new Command\xE0($this); // Read info about the current user
     }
 
     public function setDebug($enable)
